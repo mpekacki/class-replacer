@@ -9,7 +9,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "adm-zip": "^0.5.9",
     "jsforce": "^1.11.0"
   },
   "devDependencies": {
