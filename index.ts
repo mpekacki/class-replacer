@@ -58,7 +58,7 @@ const run = async () => {
       ContentEntityId: records[i]["Id"],
     });
     if (j == batchSize - 1 || i == records.length - 1) {
-      console.log(`Creating ${i + 1}/${records.length} ApexClassMember...`);
+      console.log(`Creating ApexClassMember (${i + 1}/${records.length})...`);
       const memberResult = await conn.tooling.create("ApexClassMember", batch, {
         allOrNone: true,
         allowRecursive: true,
