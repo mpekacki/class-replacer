@@ -1,4 +1,4 @@
-import { Connection } from "jsforce";
+import { Connection, RecordResult, SuccessResult } from "jsforce";
 
 const username = process.argv[2];
 const password = process.argv[3];
@@ -47,10 +47,10 @@ const run = async () => {
     }
   );
   console.log("Created MetadataContainer: " + JSON.stringify(containerResult));
-  const containerId = containerResult[0].id;
+  const containerId = getResultId(containerResult);
   console.log("Will create ApexClassMember for each ApexClass");
   let batch: any[] = []; // when trying to create ~80 members at once, it may throw lock row error on container,
-  const batchSize = 20; // so we need to split it into batches
+  const batchSize = 40; // so we need to split it into batches
   for (let i = 0, j = 0; i < records.length; i++, j++) {
     batch.push({
       Body: records[i]["Body"],
@@ -85,11 +85,11 @@ const run = async () => {
   setInterval(() => {
     conn.tooling
       .sobject("ContainerAsyncRequest")
-      .find({ Id: containerAsyncResult[0].id }, (err, records) => {
+      .find({ Id: getResultId(containerAsyncResult) }, (err, records) => {
         if (err) {
           console.log(err);
         } else {
-          const state = records[0]["State"];
+          const state = (records[0] as any)["State"];
           console.log("ContainerAsyncRequest state: " + state);
           let exitCode: number | null = null;
           if (state === "Completed") {
@@ -97,16 +97,18 @@ const run = async () => {
             exitCode = 0;
           } else if (state === "Failed") {
             console.log(
-              `ContainerAsyncRequest failed, error: ${records[0]["ErrorMsg"]}`
+              `ContainerAsyncRequest failed, error: ${
+                (records[0] as any)["ErrorMsg"]
+              }`
             );
             exitCode = 1;
           }
           if (exitCode !== null) {
-            const deployDetails = records[0]["DeployDetails"];
+            const deployDetails = (records[0] as any)["DeployDetails"];
             if (deployDetails.componentFailures.length) {
               console.log("Component failures:");
               console.log(
-                deployDetails.componentFailures.map((f) => ({
+                deployDetails.componentFailures.map((f: any) => ({
                   fullName: f.fullName,
                   problem: f.problem,
                 }))
@@ -128,6 +130,9 @@ const run = async () => {
         }
       });
   }, 3000);
+  function getResultId(containerResult: RecordResult | RecordResult[]) {
+    return ((containerResult as RecordResult[])[0] as SuccessResult).id;
+  }
 };
 run().catch((err) => {
   console.log(err);
